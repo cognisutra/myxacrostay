@@ -234,21 +234,24 @@
     function render() {
       dots().forEach((d, i) => d.classList.toggle('filled', i < pinBuffer.length));
     }
-    function reject() {
+    function reject(msg) {
       const panel = document.getElementById('login-screen').firstElementChild;
       panel.classList.add('shake');
-      errEl.textContent = 'Incorrect PIN — try again';
+      errEl.textContent = msg || 'Incorrect PIN — try again';
       setTimeout(() => panel.classList.remove('shake'), 400);
       pinBuffer = '';
       render();
     }
     function tryAuth() {
-      if (pinBuffer.length !== 6) return;
+      if (pinBuffer.length < 6) {
+        errEl.textContent = 'Please enter full 6-digit PIN';
+        return;
+      }
       if (pinBuffer === PIN) {
         sessionStorage.setItem(SESSION_KEY, 'true');
         showDashboard();
       } else {
-        reject();
+        reject('Incorrect PIN — try again');
       }
     }
 
@@ -261,13 +264,27 @@
         if (pinBuffer.length === 6) setTimeout(tryAuth, 120);
       });
     });
-    document.getElementById('pin-clear').addEventListener('click', () => { pinBuffer = ''; errEl.textContent = ''; render(); });
-    document.getElementById('pin-back').addEventListener('click', () => { pinBuffer = pinBuffer.slice(0, -1); render(); });
+    document.getElementById('pin-clear')?.addEventListener('click', () => { pinBuffer = ''; errEl.textContent = ''; render(); });
+    document.getElementById('pin-back')?.addEventListener('click', () => { pinBuffer = pinBuffer.slice(0, -1); errEl.textContent = ''; render(); });
+    document.getElementById('pin-submit')?.addEventListener('click', () => tryAuth());
 
     window.addEventListener('keydown', (e) => {
       if (document.getElementById('login-screen').classList.contains('hidden')) return;
-      if (/^[0-9]$/.test(e.key) && pinBuffer.length < 6) { pinBuffer += e.key; errEl.textContent=''; render(); if (pinBuffer.length===6) setTimeout(tryAuth,120); }
-      if (e.key === 'Backspace') { pinBuffer = pinBuffer.slice(0, -1); render(); }
+      if (/^[0-9]$/.test(e.key) && pinBuffer.length < 6) {
+        pinBuffer += e.key;
+        errEl.textContent = '';
+        render();
+        if (pinBuffer.length === 6) setTimeout(tryAuth, 120);
+      }
+      if (e.key === 'Backspace') {
+        pinBuffer = pinBuffer.slice(0, -1);
+        errEl.textContent = '';
+        render();
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        tryAuth();
+      }
     });
   }
 

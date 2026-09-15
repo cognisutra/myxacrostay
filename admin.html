@@ -88,14 +88,20 @@
       <button class="keypad-btn" data-key="7">7</button>
       <button class="keypad-btn" data-key="8">8</button>
       <button class="keypad-btn" data-key="9">9</button>
-      <button class="keypad-btn" id="pin-clear" aria-label="Clear"><i class="fa-solid fa-xmark text-base"></i></button>
+      <button class="keypad-btn text-champagne" id="pin-clear" aria-label="Clear" title="Clear All"><i class="fa-solid fa-rotate-left text-base"></i></button>
       <button class="keypad-btn" data-key="0">0</button>
-      <button class="keypad-btn" id="pin-back" aria-label="Backspace"><i class="fa-solid fa-delete-left text-base"></i></button>
+      <button class="keypad-btn" id="pin-back" aria-label="Backspace" title="Delete"><i class="fa-solid fa-delete-left text-base"></i></button>
     </div>
 
-    <p id="pin-error" class="text-[12.5px] h-4" style="color:#D98079"></p>
+    <!-- Explicit Proceed / Submit Button -->
+    <button type="button" id="pin-submit" class="btn btn-champagne w-full py-3.5 text-sm font-bold flex items-center justify-center gap-2 rounded-xl mb-3 shadow-lg">
+      Proceed to Dashboard <i class="fa-solid fa-arrow-right"></i>
+    </button>
 
-    <a href="index.html" class="inline-block mt-6 text-[12.5px] hover:text-champagne transition-colors" style="color:var(--mist); opacity:.55">
+    <p id="pin-error" class="text-[12.5px] min-h-[1.25rem] font-semibold text-red-400"></p>
+    <p class="text-[11.5px] mt-2 text-mist/50">Default Admin PIN: <code class="text-champagne font-bold font-mono">845416</code></p>
+
+    <a href="index.html" class="inline-block mt-5 text-[12.5px] hover:text-champagne transition-colors" style="color:var(--mist); opacity:.55">
       <i class="fa-solid fa-arrow-left mr-1"></i>Back to guest feedback form
     </a>
   </div>
