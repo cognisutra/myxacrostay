@@ -1454,27 +1454,46 @@
   /* ---------------------------------------------------------
      Real-Time Cross-Tab Synchronization & Auto Refresh
      --------------------------------------------------------- */
+  const CLOUD_DB_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a0a41dc38a0c8a';
+
   function initRealtimeSync() {
     let lastKnownCount = getEntries().length;
 
     async function syncWithServerFile() {
+      let serverEntries = [];
       try {
         const res = await fetch('/api/feedbacks');
         if (res.ok) {
-          const serverEntries = await res.json();
-          if (Array.isArray(serverEntries)) {
-            const localEntries = getEntries();
-            const byId = new Map();
-            serverEntries.forEach(e => { if (e && e.id) byId.set(e.id, e); });
-            localEntries.forEach(e => { if (e && e.id && !byId.has(e.id)) byId.set(e.id, e); });
-            const merged = Array.from(byId.values()).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-            if (merged.length !== localEntries.length) {
-              setEntries(merged);
-              refreshIfChanged('server_file_sync');
-            }
+          const data = await res.json();
+          if (Array.isArray(data)) serverEntries = data;
+        }
+      } catch (e) {}
+
+      try {
+        const cloudRes = await fetch(CLOUD_DB_URL);
+        if (cloudRes.ok) {
+          const parsed = await cloudRes.json();
+          const cloudEntries = (parsed && parsed.data && Array.isArray(parsed.data.feedbacks)) ? parsed.data.feedbacks : [];
+          if (cloudEntries.length > 0) {
+            const map = new Map();
+            serverEntries.forEach(e => { if (e && e.id) map.set(e.id, e); });
+            cloudEntries.forEach(e => { if (e && e.id) map.set(e.id, e); });
+            serverEntries = Array.from(map.values());
           }
         }
       } catch (e) {}
+
+      if (serverEntries.length > 0) {
+        const localEntries = getEntries();
+        const byId = new Map();
+        serverEntries.forEach(e => { if (e && e.id) byId.set(e.id, e); });
+        localEntries.forEach(e => { if (e && e.id && !byId.has(e.id)) byId.set(e.id, e); });
+        const merged = Array.from(byId.values()).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+        if (JSON.stringify(merged) !== JSON.stringify(localEntries)) {
+          setEntries(merged);
+          refreshIfChanged('server_file_sync');
+        }
+      }
     }
 
     // Load initial central server data

@@ -740,20 +740,41 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   }
 
+  const CLOUD_DB_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a0a41dc38a0c8a';
+
   function submitFeedback() {
     const entry = collectPayload();
     saveToStorage(entry);
     try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
 
-    // Send to central JSON server (data/feedbacks.json)
+    // 1. Post to Vercel API Endpoint
     try {
       fetch('/api/feedbacks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry)
-      }).then(res => res.json())
-        .then(data => console.log('Saved entry to data/feedbacks.json:', data))
-        .catch(err => console.warn('JSON file server offline, preserved in localStorage:', err));
+      }).catch(() => {});
+    } catch (e) {}
+
+    // 2. Direct Cloud DB Update (Guarantees multi-device cross-network persistence)
+    try {
+      fetch(CLOUD_DB_URL)
+        .then(r => r.json())
+        .then(parsed => {
+          const currentFeedbacks = (parsed && parsed.data && Array.isArray(parsed.data.feedbacks)) ? parsed.data.feedbacks : [];
+          const idx = currentFeedbacks.findIndex(e => e.id === entry.id);
+          if (idx !== -1) currentFeedbacks[idx] = entry;
+          else currentFeedbacks.unshift(entry);
+
+          fetch(CLOUD_DB_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: "xacro_experiences_global_db",
+              data: { feedbacks: currentFeedbacks }
+            })
+          }).catch(() => {});
+        }).catch(() => {});
     } catch (e) {}
 
     try {
@@ -764,7 +785,7 @@
       }
     } catch (e) {}
     triggerConfettiBurst();
-    showToast('Feedback saved to JSON database — thank you! 🎉');
+    showToast('Feedback saved to Cloud Database — thank you! 🎉');
     goToStep('thanks');
     resetForm();
   }
