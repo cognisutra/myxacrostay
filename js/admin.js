@@ -1221,6 +1221,12 @@
   function renderEntries(list) {
     const mount = document.getElementById('entries-list');
     const empty = document.getElementById('empty-state');
+    const showingCount = document.getElementById('showing-count-text');
+
+    if (showingCount) {
+      showingCount.textContent = `Showing ${list.length} of ${getEntries().length} total entries`;
+    }
+
     if (!mount || !empty) return;
 
     if (!list.length) {
@@ -1421,6 +1427,76 @@
   }
 
   /* ---------------------------------------------------------
+     Real-Time Cross-Tab Synchronization & Auto Refresh
+     --------------------------------------------------------- */
+  function initRealtimeSync() {
+    let lastKnownCount = getEntries().length;
+
+    function refreshIfChanged(reason) {
+      const currentEntries = getEntries();
+      const countEl = document.getElementById('showing-count-text');
+      if (countEl) {
+        countEl.textContent = `Showing ${applyFilters(currentEntries).length} of ${currentEntries.length} total entries`;
+      }
+      const syncStatusEl = document.getElementById('sync-status-text');
+      if (syncStatusEl) {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        syncStatusEl.textContent = `Real-Time Sync Active (${timeStr})`;
+      }
+
+      if (currentEntries.length !== lastKnownCount || reason === 'force') {
+        const diff = currentEntries.length - lastKnownCount;
+        lastKnownCount = currentEntries.length;
+        renderDashboard();
+        if (diff > 0 && reason !== 'force') {
+          showToast(`⚡ ${diff} new guest feedback received!`);
+        }
+      }
+    }
+
+    // 1. BroadcastChannel API for cross-tab messages
+    try {
+      if ('BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('xacro_feedback_channel');
+        channel.onmessage = (event) => {
+          if (event.data && (event.data.type === 'NEW_FEEDBACK' || event.data.type === 'NEW_FEEDBACK_SUBMITTED')) {
+            refreshIfChanged('broadcast');
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('BroadcastChannel sync init warning:', e);
+    }
+
+    // 2. Window Storage Event (cross-window/tab local storage changes)
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY || e.key === PROPERTIES_KEY || e.key === ROOMS_KEY || e.key === 'srs_active_draft') {
+        refreshIfChanged('storage_event');
+      }
+    });
+
+    // 3. Periodic Polling Ticker (2.5 second fail-safe fallback)
+    setInterval(() => {
+      refreshIfChanged('polling');
+    }, 2500);
+
+    // 4. Force Sync Button Click Listener
+    const syncBtn = document.getElementById('btn-force-sync');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const icon = syncBtn.querySelector('i');
+        if (icon) icon.classList.add('fa-spin');
+        refreshIfChanged('force');
+        showToast('Database synchronized & refreshed! 🔄');
+        setTimeout(() => {
+          if (icon) icon.classList.remove('fa-spin');
+        }, 600);
+      });
+    }
+  }
+
+  /* ---------------------------------------------------------
      Init
      --------------------------------------------------------- */
   function init() {
@@ -1431,6 +1507,7 @@
     initPropertyModal();
     initManualFeedbackModal();
     initRoomManagement();
+    initRealtimeSync();
     if (window.AOS) AOS.init({ once: true, duration: 500 });
 
     const headerSelect = document.getElementById('header-property-select');

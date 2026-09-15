@@ -415,6 +415,21 @@
         </button>
       </div>
 
+      <!-- Live Storage Sync Status Bar -->
+      <div class="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="font-bold text-mist/90" id="sync-status-text">Real-Time Sync Active</span>
+          <span class="text-mist/40">·</span>
+          <span class="text-champagne font-bold" id="showing-count-text">Showing 0 entries</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="btn-force-sync" class="text-champagne hover:text-white font-bold flex items-center gap-1 transition-colors">
+            <i class="fa-solid fa-rotate text-xs"></i> Sync Database Now
+          </button>
+        </div>
+      </div>
+
       <!-- Entries list -->
       <div id="entries-list" class="space-y-4"></div>
 

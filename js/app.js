@@ -744,6 +744,13 @@
     const entry = collectPayload();
     saveToStorage(entry);
     try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    try {
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('xacro_feedback_channel');
+        bc.postMessage({ type: 'NEW_FEEDBACK', entry: entry });
+        bc.close();
+      }
+    } catch (e) {}
     triggerConfettiBurst();
     showToast('Feedback saved — thank you! 🎉');
     goToStep('thanks');
