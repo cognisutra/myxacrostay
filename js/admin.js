@@ -1456,8 +1456,6 @@
   /* ---------------------------------------------------------
      Real-Time Cross-Tab Synchronization & Auto Refresh
      --------------------------------------------------------- */
-  const CLOUD_DB_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a0a41dc38a0c8a';
-
   function initRealtimeSync() {
     let lastKnownCount = getEntries().length;
 
@@ -1490,7 +1488,7 @@
         } catch (err) {}
       });
 
-      // 3. Fetch from Server File Endpoint
+      // 3. Fetch from Server API Endpoint
       try {
         const res = await fetch('/api/feedbacks');
         if (res.ok) {
@@ -1498,16 +1496,6 @@
           if (Array.isArray(data)) {
             data.forEach(e => { if (e && e.id) foundMap.set(e.id, e); });
           }
-        }
-      } catch (e) {}
-
-      // 4. Fetch from Persistent Global Cloud Database
-      try {
-        const cloudRes = await fetch(CLOUD_DB_URL);
-        if (cloudRes.ok) {
-          const parsed = await cloudRes.json();
-          const cloudEntries = (parsed && parsed.data && Array.isArray(parsed.data.feedbacks)) ? parsed.data.feedbacks : [];
-          cloudEntries.forEach(e => { if (e && e.id) foundMap.set(e.id, e); });
         }
       } catch (e) {}
 
@@ -1523,18 +1511,6 @@
       setEntries(allRecovered);
       try { localStorage.setItem('srs_feedbacks_backup', JSON.stringify(allRecovered)); } catch (e) {}
 
-      // Push merged data back to Cloud DB
-      try {
-        fetch(CLOUD_DB_URL, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: "xacro_experiences_global_db",
-            data: { feedbacks: allRecovered }
-          })
-        }).catch(() => {});
-      } catch (e) {}
-
       renderDashboard();
       return allRecovered;
     }
@@ -1546,20 +1522,6 @@
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) serverEntries = data;
-        }
-      } catch (e) {}
-
-      try {
-        const cloudRes = await fetch(CLOUD_DB_URL);
-        if (cloudRes.ok) {
-          const parsed = await cloudRes.json();
-          const cloudEntries = (parsed && parsed.data && Array.isArray(parsed.data.feedbacks)) ? parsed.data.feedbacks : [];
-          if (cloudEntries.length > 0) {
-            const map = new Map();
-            serverEntries.forEach(e => { if (e && e.id) map.set(e.id, e); });
-            cloudEntries.forEach(e => { if (e && e.id) map.set(e.id, e); });
-            serverEntries = Array.from(map.values());
-          }
         }
       } catch (e) {}
 
