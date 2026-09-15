@@ -399,6 +399,8 @@
     }
   }
 
+
+
   /* ---------------------------------------------------------
      Data Helpers & Data Store
      --------------------------------------------------------- */
@@ -1459,6 +1461,84 @@
   function initRealtimeSync() {
     let lastKnownCount = getEntries().length;
 
+    async function deepScanAndRecover() {
+      const foundMap = new Map();
+
+      // 1. Scan current entries
+      getEntries().forEach(e => { if (e && e.id) foundMap.set(e.id, e); });
+
+      // 2. Scan all localStorage & sessionStorage keys
+      [localStorage, sessionStorage].forEach(store => {
+        try {
+          for (let i = 0; i < store.length; i++) {
+            const key = store.key(i);
+            if (!key) continue;
+            try {
+              const val = store.getItem(key);
+              if (!val) continue;
+              const parsed = JSON.parse(val);
+              const arr = Array.isArray(parsed) ? parsed : [parsed];
+              arr.forEach(item => {
+                if (item && typeof item === 'object') {
+                  if (item.id && (item.guest || item.ratings || item.submittedAt)) {
+                    foundMap.set(item.id, item);
+                  }
+                }
+              });
+            } catch (err) {}
+          }
+        } catch (err) {}
+      });
+
+      // 3. Fetch from Server File Endpoint
+      try {
+        const res = await fetch('/api/feedbacks');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            data.forEach(e => { if (e && e.id) foundMap.set(e.id, e); });
+          }
+        }
+      } catch (e) {}
+
+      // 4. Fetch from Persistent Global Cloud Database
+      try {
+        const cloudRes = await fetch(CLOUD_DB_URL);
+        if (cloudRes.ok) {
+          const parsed = await cloudRes.json();
+          const cloudEntries = (parsed && parsed.data && Array.isArray(parsed.data.feedbacks)) ? parsed.data.feedbacks : [];
+          cloudEntries.forEach(e => { if (e && e.id) foundMap.set(e.id, e); });
+        }
+      } catch (e) {}
+
+      const allRecovered = Array.from(foundMap.values()).map(e => {
+        if (!e.propertyId) {
+          e.propertyId = 'srs';
+          e.propertyName = 'Silver Rain Suites';
+          e.propertyCode = 'SRS';
+        }
+        return e;
+      }).sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0));
+
+      setEntries(allRecovered);
+      try { localStorage.setItem('srs_feedbacks_backup', JSON.stringify(allRecovered)); } catch (e) {}
+
+      // Push merged data back to Cloud DB
+      try {
+        fetch(CLOUD_DB_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: "xacro_experiences_global_db",
+            data: { feedbacks: allRecovered }
+          })
+        }).catch(() => {});
+      } catch (e) {}
+
+      renderDashboard();
+      return allRecovered;
+    }
+
     async function syncWithServerFile() {
       let serverEntries = [];
       try {
@@ -1483,21 +1563,20 @@
         }
       } catch (e) {}
 
-      if (serverEntries.length > 0) {
-        const localEntries = getEntries();
-        const byId = new Map();
-        serverEntries.forEach(e => { if (e && e.id) byId.set(e.id, e); });
-        localEntries.forEach(e => { if (e && e.id && !byId.has(e.id)) byId.set(e.id, e); });
-        const merged = Array.from(byId.values()).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-        if (JSON.stringify(merged) !== JSON.stringify(localEntries)) {
-          setEntries(merged);
-          refreshIfChanged('server_file_sync');
-        }
+      const localEntries = getEntries();
+      const byId = new Map();
+      localEntries.forEach(e => { if (e && e.id) byId.set(e.id, e); });
+      serverEntries.forEach(e => { if (e && e.id) byId.set(e.id, e); });
+
+      const merged = Array.from(byId.values()).sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0));
+      if (JSON.stringify(merged) !== JSON.stringify(localEntries)) {
+        setEntries(merged);
+        refreshIfChanged('server_file_sync');
       }
     }
 
-    // Load initial central server data
-    syncWithServerFile();
+    // Load initial central server data & run initial deep scan
+    deepScanAndRecover();
 
     function refreshIfChanged(reason) {
       const currentEntries = getEntries();
@@ -1538,7 +1617,7 @@
 
     // 2. Window Storage Event (cross-window/tab local storage changes)
     window.addEventListener('storage', (e) => {
-      if (e.key === STORAGE_KEY || e.key === PROPERTIES_KEY || e.key === ROOMS_KEY || e.key === 'srs_active_draft') {
+      if (e.key === STORAGE_KEY || e.key === PROPERTIES_KEY || e.key === ROOMS_KEY || e.key === 'srs_active_draft' || e.key === 'srs_feedbacks_backup') {
         syncWithServerFile();
         refreshIfChanged('storage_event');
       }
@@ -1560,6 +1639,22 @@
         syncWithServerFile().then(() => {
           refreshIfChanged('force');
           showToast('Database synchronized & refreshed! 🔄');
+          setTimeout(() => {
+            if (icon) icon.classList.remove('fa-spin');
+          }, 600);
+        });
+      });
+    }
+
+    // 5. Deep Scan & Recover Reviews Button
+    const recoverBtn = document.getElementById('btn-deep-recover');
+    if (recoverBtn) {
+      recoverBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const icon = recoverBtn.querySelector('i');
+        if (icon) icon.classList.add('fa-spin');
+        deepScanAndRecover().then((recovered) => {
+          showToast(`Deep scan complete — ${recovered.length} total reviews active & synced! 🔍✨`);
           setTimeout(() => {
             if (icon) icon.classList.remove('fa-spin');
           }, 600);
