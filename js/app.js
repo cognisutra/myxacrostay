@@ -124,24 +124,11 @@
     return div.innerHTML;
   }
 
-  function populatePropertyDropdown() {
-    const propSelect = document.getElementById('f-property');
-    if (!propSelect) return;
-    const props = getProperties();
-    propSelect.innerHTML = props.map(p => 
-      `<option value="${escapeHTML(p.id)}">${escapeHTML(p.name)} — ${escapeHTML(p.city)}</option>`
-    ).join('');
-    propSelect.addEventListener('change', () => {
-      populateRoomDropdown(propSelect.value);
-    });
-    populateRoomDropdown(propSelect.value || (props[0] && props[0].id) || 'srs');
-  }
-
   function populateRoomDropdown(propertyId) {
     const select = document.getElementById('f-room');
     if (!select) return;
+    const targetId = propertyId || 'srs';
     const props = getProperties();
-    const targetId = propertyId || (props[0] && props[0].id) || 'srs';
     const prop = props.find(p => p.id === targetId) || props[0];
     let rooms = (prop && prop.rooms) ? prop.rooms : [];
     if (targetId === 'srs') {
@@ -702,17 +689,15 @@
   function collectPayload() {
     const checkIn = val('f-checkin');
     const checkOut = val('f-checkout');
-    const propSelect = document.getElementById('f-property');
-    const selectedPropId = propSelect ? propSelect.value : 'srs';
     const props = getProperties();
-    const activeProp = props.find(p => p.id === selectedPropId) || props[0];
+    const srsProp = props.find(p => p.id === 'srs') || props[0];
 
     return {
       id: 'fb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       submittedAt: new Date().toISOString(),
-      propertyId: activeProp ? activeProp.id : 'srs',
-      propertyName: activeProp ? activeProp.name : 'Silver Rain Suites',
-      propertyCode: activeProp ? activeProp.shortCode : 'SRS',
+      propertyId: srsProp ? srsProp.id : 'srs',
+      propertyName: srsProp ? srsProp.name : 'Silver Rain Suites',
+      propertyCode: srsProp ? srsProp.shortCode : 'SRS',
       guest: {
         name: val('f-name'),
         room: val('f-room'),
@@ -785,7 +770,7 @@
     buildCategorySteps();
     wirePillGroups();
     wireNav();
-    populatePropertyDropdown();
+    populateRoomDropdown('srs');
 
     const fbDate = document.getElementById('f-fbdate');
     if (fbDate) fbDate.valueAsDate = new Date();
