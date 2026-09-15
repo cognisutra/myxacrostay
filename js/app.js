@@ -602,6 +602,7 @@
   }
 
   function advanceFrom(stepId) {
+    autoSaveDraft();
     const idx = STEP_ORDER.indexOf(stepId);
     goToStep(STEP_ORDER[idx + 1]);
   }
@@ -720,6 +721,18 @@
     return el ? el.value.trim() : '';
   }
 
+  const DRAFT_KEY = 'srs_active_draft';
+
+  function autoSaveDraft() {
+    try {
+      const entry = collectPayload();
+      const hasData = entry.guest.name || entry.guest.room || entry.highlight || entry.improve || entry.comments || Object.keys(entry.ratings).length > 0;
+      if (hasData) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(entry));
+      }
+    } catch (e) {}
+  }
+
   function saveToStorage(entry) {
     let list = [];
     try { list = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (e) { list = []; }
@@ -730,6 +743,7 @@
   function submitFeedback() {
     const entry = collectPayload();
     saveToStorage(entry);
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
     triggerConfettiBurst();
     showToast('Feedback saved — thank you! 🎉');
     goToStep('thanks');

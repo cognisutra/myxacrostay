@@ -555,6 +555,7 @@
      --------------------------------------------------------- */
   function renderDashboard() {
     updatePropertyDropdowns();
+    checkDraftRecovery();
     const allEntries = getEntries();
     const filteredEntries = activePropertyId === 'ALL' ? allEntries : allEntries.filter(e => e.propertyId === activePropertyId);
 
@@ -842,6 +843,150 @@
       showToast(`Property "${p.name}" deleted.`);
     }
   };
+  /* ---------------------------------------------------------
+     Manual Feedback Modal & Draft Recovery
+     --------------------------------------------------------- */
+  function initManualFeedbackModal() {
+    const modal = document.getElementById('manual-feedback-modal');
+    if (!modal) return;
+
+    const openBtns = [
+      document.getElementById('btn-header-manual-feedback'),
+      document.getElementById('btn-tab-manual-feedback')
+    ].filter(Boolean);
+
+    function populateMFDropdowns() {
+      const props = getProperties();
+      const propSelect = document.getElementById('mf-property');
+      const roomSelect = document.getElementById('mf-room');
+
+      if (propSelect) {
+        propSelect.innerHTML = props.map(p => `<option value="${p.id}">${escapeHTML(p.name)} (${escapeHTML(p.city)})</option>`).join('');
+        propSelect.value = 'srs';
+      }
+
+      function updateRooms(pId) {
+        if (!roomSelect) return;
+        const rooms = getRoomsForProperty(pId);
+        roomSelect.innerHTML = '<option value="">Select room (Optional)...</option>' +
+          rooms.map(r => `<option value="${escapeHTML(r.number)}">Room ${escapeHTML(r.number)} — ${escapeHTML(r.type)}</option>`).join('');
+      }
+
+      if (propSelect) {
+        propSelect.addEventListener('change', () => updateRooms(propSelect.value));
+      }
+      updateRooms('srs');
+    }
+
+    openBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        populateMFDropdowns();
+        document.getElementById('mf-form')?.reset();
+        const checkIn = document.getElementById('mf-checkin');
+        const checkOut = document.getElementById('mf-checkout');
+        if (checkIn && !checkIn.value) checkIn.valueAsDate = new Date();
+        if (checkOut && !checkOut.value) checkOut.valueAsDate = new Date();
+        modal.classList.remove('hidden');
+      });
+    });
+
+    document.getElementById('close-mf-modal')?.addEventListener('click', () => modal.classList.add('hidden'));
+    document.getElementById('cancel-mf-modal')?.addEventListener('click', () => modal.classList.add('hidden'));
+
+    document.getElementById('mf-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const propId = document.getElementById('mf-property')?.value || 'srs';
+      const props = getProperties();
+      const prop = props.find(p => p.id === propId) || props[0];
+
+      const guestName = document.getElementById('mf-name')?.value.trim() || 'Valued Guest';
+      const roomNo = document.getElementById('mf-room')?.value || '';
+      const checkIn = document.getElementById('mf-checkin')?.value || '';
+      const checkOut = document.getElementById('mf-checkout')?.value || '';
+      const overallRating = parseInt(document.getElementById('mf-rating-overall')?.value || '5', 10);
+      const highlight = document.getElementById('mf-highlight')?.value.trim() || '';
+      const improve = document.getElementById('mf-improve')?.value.trim() || '';
+      const teamMember = document.getElementById('mf-teammember')?.value.trim() || '';
+      const recommend = document.getElementById('mf-recommend')?.value || 'Yes';
+      const stayAgain = document.getElementById('mf-stayagain')?.value || 'Yes';
+      const comments = document.getElementById('mf-comments')?.value.trim() || '';
+
+      const entry = {
+        id: 'mf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        submittedAt: new Date().toISOString(),
+        propertyId: prop.id,
+        propertyName: prop.name,
+        propertyCode: prop.shortCode,
+        guest: {
+          name: guestName,
+          room: roomNo,
+          checkIn: checkIn,
+          checkOut: checkOut,
+          stayDates: (checkIn && checkOut) ? `${checkIn} – ${checkOut}` : (checkIn || checkOut || ''),
+          feedbackDate: new Date().toISOString().slice(0, 10)
+        },
+        ratings: {
+          overall: overallRating,
+          reservation: overallRating,
+          arrival: overallRating,
+          room: overallRating,
+          housekeeping: overallRating,
+          dining: overallRating,
+          instay: overallRating,
+          departure: overallRating
+        },
+        highlight: highlight,
+        improve: improve,
+        recommend: recommend,
+        stayAgain: stayAgain,
+        teamMember: teamMember,
+        comments: comments
+      };
+
+      const entries = getEntries();
+      entries.unshift(entry);
+      setEntries(entries);
+
+      modal.classList.add('hidden');
+      renderDashboard();
+      showToast(`Recorded feedback for ${guestName}! 🎉`);
+    });
+  }
+
+  function checkDraftRecovery() {
+    const DRAFT_KEY = 'srs_active_draft';
+    const banner = document.getElementById('draft-recovery-banner');
+    const btn = document.getElementById('btn-save-draft');
+    if (!banner || !btn) return;
+
+    try {
+      const draftRaw = localStorage.getItem(DRAFT_KEY);
+      if (draftRaw) {
+        const draft = JSON.parse(draftRaw);
+        const hasData = draft && (draft.guest?.name || draft.guest?.room || draft.highlight || draft.improve || draft.comments || Object.keys(draft.ratings || {}).length > 0);
+        if (hasData) {
+          const guestName = draft.guest?.name || (draft.guest?.room ? `Room ${draft.guest.room}` : 'Recent guest');
+          const titleEl = document.getElementById('draft-banner-text');
+          if (titleEl) titleEl.textContent = `In-progress draft captured for ${guestName}!`;
+          banner.classList.remove('hidden');
+
+          btn.onclick = () => {
+            const entries = getEntries();
+            draft.id = 'recovered_' + Date.now();
+            draft.submittedAt = new Date().toISOString();
+            entries.unshift(draft);
+            setEntries(entries);
+            localStorage.removeItem(DRAFT_KEY);
+            banner.classList.add('hidden');
+            renderDashboard();
+            showToast(`Recovered & saved feedback draft for ${guestName}! 🎉`);
+          };
+          return;
+        }
+      }
+    } catch (e) {}
+    banner.classList.add('hidden');
+  }
 
   /* ---------------------------------------------------------
      Staff & Insights
@@ -1284,6 +1429,7 @@
     initSidebarNav();
     initLiveClock();
     initPropertyModal();
+    initManualFeedbackModal();
     initRoomManagement();
     if (window.AOS) AOS.init({ once: true, duration: 500 });
 
