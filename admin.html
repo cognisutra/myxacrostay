@@ -69,11 +69,14 @@
     <div class="mb-5">
       <img src="images/logo.jpeg" alt="Silver Rain Suites" class="h-28 mx-auto object-contain rounded-2xl shadow-xl border border-white/10 p-2 bg-white">
     </div>
-    <p class="text-[12px] font-bold tracking-widest uppercase mb-2" style="color:var(--rain)">SILVER RAIN SUITES</p>
+    <p class="text-[12px] font-bold tracking-widest uppercase mb-2" style="color:var(--rain)">XACRO EXPERIENCES</p>
     <h1 class="font-display text-[28px] text-mist mb-1">Admin Access</h1>
-    <p class="text-[13px] mb-8" style="color:var(--mist); opacity:.55">Enter 6-digit Security PIN to launch Command Center</p>
+    <p class="text-[13px] mb-6" style="color:var(--mist); opacity:.55">Enter 6-digit Security PIN to launch Command Center</p>
 
-    <div class="flex items-center justify-center gap-3 mb-9" id="pin-dots">
+    <!-- Hidden input for mobile keyboard / autofill -->
+    <input type="password" id="pin-input" maxlength="6" inputmode="numeric" pattern="[0-9]*" class="opacity-0 absolute -z-10 w-0 h-0" autocomplete="off">
+
+    <div class="flex items-center justify-center gap-3 mb-8 cursor-pointer" id="pin-dots" title="Tap to enter PIN">
       <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
       <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
     </div>
@@ -94,14 +97,14 @@
     </div>
 
     <!-- Explicit Proceed / Submit Button -->
-    <button type="button" id="pin-submit" class="btn btn-champagne w-full py-3.5 text-sm font-bold flex items-center justify-center gap-2 rounded-xl mb-3 shadow-lg">
+    <button type="button" id="pin-submit" class="btn btn-champagne w-full py-3.5 text-sm font-bold flex items-center justify-center gap-2 rounded-xl mb-3 shadow-lg cursor-pointer">
       Proceed to Dashboard <i class="fa-solid fa-arrow-right"></i>
     </button>
 
-    <p id="pin-error" class="text-[12.5px] min-h-[1.25rem] font-semibold text-red-400"></p>
-    <p class="text-[11.5px] mt-2 text-mist/50">Default Admin PIN: <code class="text-champagne font-bold font-mono">845416</code></p>
+    <p id="pin-error" class="text-[12.5px] min-h-[1.25rem] font-semibold text-red-400 mb-1"></p>
+    <p class="text-[11.5px] text-mist/50">Default Admin PIN: <code class="text-champagne font-bold font-mono">845416</code></p>
 
-    <a href="index.html" class="inline-block mt-5 text-[12.5px] hover:text-champagne transition-colors" style="color:var(--mist); opacity:.55">
+    <a href="index.html" class="inline-block mt-4 text-[12.5px] hover:text-champagne transition-colors" style="color:var(--mist); opacity:.55">
       <i class="fa-solid fa-arrow-left mr-1"></i>Back to guest feedback form
     </a>
   </div>

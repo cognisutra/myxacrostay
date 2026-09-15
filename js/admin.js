@@ -287,55 +287,96 @@
     }
     const dots = () => document.querySelectorAll('.pin-dot');
     const errEl = document.getElementById('pin-error');
+    const hiddenInput = document.getElementById('pin-input');
 
     function render() {
       dots().forEach((d, i) => d.classList.toggle('filled', i < pinBuffer.length));
+      if (hiddenInput && hiddenInput.value !== pinBuffer) {
+        hiddenInput.value = pinBuffer;
+      }
     }
+
     function reject(msg) {
-      const panel = document.getElementById('login-screen').firstElementChild;
-      panel.classList.add('shake');
-      errEl.textContent = msg || 'Incorrect PIN — try again';
-      setTimeout(() => panel.classList.remove('shake'), 400);
+      const panel = document.getElementById('login-screen')?.firstElementChild;
+      if (panel) {
+        panel.classList.add('shake');
+        setTimeout(() => panel.classList.remove('shake'), 400);
+      }
+      if (errEl) errEl.textContent = msg || 'Incorrect PIN — default is 845416';
       pinBuffer = '';
       render();
     }
+
     function tryAuth() {
       if (pinBuffer.length < 6) {
-        errEl.textContent = 'Please enter full 6-digit PIN';
+        if (errEl) errEl.textContent = 'Please enter all 6 digits of the PIN (Default: 845416)';
         return;
       }
       if (pinBuffer === PIN) {
         sessionStorage.setItem(SESSION_KEY, 'true');
         showDashboard();
       } else {
-        reject('Incorrect PIN — try again');
+        reject('Incorrect PIN — please try 845416');
       }
     }
 
     document.querySelectorAll('#keypad [data-key]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
         if (pinBuffer.length >= 6) return;
         pinBuffer += btn.dataset.key;
-        errEl.textContent = '';
+        if (errEl) errEl.textContent = '';
         render();
-        if (pinBuffer.length === 6) setTimeout(tryAuth, 120);
+        if (pinBuffer.length === 6) setTimeout(tryAuth, 80);
       });
     });
-    document.getElementById('pin-clear')?.addEventListener('click', () => { pinBuffer = ''; errEl.textContent = ''; render(); });
-    document.getElementById('pin-back')?.addEventListener('click', () => { pinBuffer = pinBuffer.slice(0, -1); errEl.textContent = ''; render(); });
-    document.getElementById('pin-submit')?.addEventListener('click', () => tryAuth());
+
+    document.getElementById('pin-clear')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      pinBuffer = '';
+      if (errEl) errEl.textContent = '';
+      render();
+    });
+
+    document.getElementById('pin-back')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      pinBuffer = pinBuffer.slice(0, -1);
+      if (errEl) errEl.textContent = '';
+      render();
+    });
+
+    document.getElementById('pin-submit')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      tryAuth();
+    });
+
+    if (hiddenInput) {
+      hiddenInput.addEventListener('input', () => {
+        const val = hiddenInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+        pinBuffer = val;
+        if (errEl) errEl.textContent = '';
+        render();
+        if (pinBuffer.length === 6) setTimeout(tryAuth, 80);
+      });
+    }
+
+    document.getElementById('pin-dots')?.addEventListener('click', () => {
+      if (hiddenInput) hiddenInput.focus();
+    });
 
     window.addEventListener('keydown', (e) => {
-      if (document.getElementById('login-screen').classList.contains('hidden')) return;
+      const loginScreen = document.getElementById('login-screen');
+      if (!loginScreen || loginScreen.classList.contains('hidden')) return;
+
       if (/^[0-9]$/.test(e.key) && pinBuffer.length < 6) {
         pinBuffer += e.key;
-        errEl.textContent = '';
+        if (errEl) errEl.textContent = '';
         render();
-        if (pinBuffer.length === 6) setTimeout(tryAuth, 120);
+        if (pinBuffer.length === 6) setTimeout(tryAuth, 80);
       }
       if (e.key === 'Backspace') {
         pinBuffer = pinBuffer.slice(0, -1);
-        errEl.textContent = '';
+        if (errEl) errEl.textContent = '';
         render();
       }
       if (e.key === 'Enter') {
@@ -346,9 +387,16 @@
   }
 
   function showDashboard() {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('dashboard-screen').classList.remove('hidden');
-    renderDashboard();
+    const loginScreen = document.getElementById('login-screen');
+    const dashboardScreen = document.getElementById('dashboard-screen');
+    if (loginScreen) loginScreen.classList.add('hidden');
+    if (dashboardScreen) dashboardScreen.classList.remove('hidden');
+
+    try {
+      renderDashboard();
+    } catch (err) {
+      console.error('Error rendering dashboard:', err);
+    }
   }
 
   /* ---------------------------------------------------------
