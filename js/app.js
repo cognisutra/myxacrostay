@@ -744,6 +744,18 @@
     const entry = collectPayload();
     saveToStorage(entry);
     try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+
+    // Send to central JSON server (data/feedbacks.json)
+    try {
+      fetch('/api/feedbacks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      }).then(res => res.json())
+        .then(data => console.log('Saved entry to data/feedbacks.json:', data))
+        .catch(err => console.warn('JSON file server offline, preserved in localStorage:', err));
+    } catch (e) {}
+
     try {
       if ('BroadcastChannel' in window) {
         const bc = new BroadcastChannel('xacro_feedback_channel');
@@ -752,7 +764,7 @@
       }
     } catch (e) {}
     triggerConfettiBurst();
-    showToast('Feedback saved — thank you! 🎉');
+    showToast('Feedback saved to JSON database — thank you! 🎉');
     goToStep('thanks');
     resetForm();
   }

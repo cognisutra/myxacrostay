@@ -1290,6 +1290,13 @@
         const id = btn.dataset.delete;
         const remaining = getEntries().filter(e => e.id !== id);
         setEntries(remaining);
+        try {
+          fetch('/api/feedbacks', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+          }).catch(() => {});
+        } catch (e) {}
         showToast('Entry deleted');
         renderDashboard();
       });
@@ -1353,7 +1360,18 @@
         if (!Array.isArray(incoming)) throw new Error('not an array');
         const existing = getEntries();
         const byId = new Map(existing.map(ex => [ex.id, ex]));
-        incoming.forEach(inc => { if (inc && inc.id) byId.set(inc.id, inc); });
+        incoming.forEach(inc => {
+          if (inc && inc.id) {
+            byId.set(inc.id, inc);
+            try {
+              fetch('/api/feedbacks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(inc)
+              }).catch(() => {});
+            } catch (err) {}
+          }
+        });
         setEntries(Array.from(byId.values()));
         showToast(`Imported — ${byId.size} total responses now`);
         renderDashboard();
@@ -1367,6 +1385,13 @@
   function clearAll() {
     if (!confirm('Delete ALL feedback responses from this browser? This cannot be undone. Export a backup first if you need one.')) return;
     setEntries([]);
+    try {
+      fetch('/api/feedbacks', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: 'ALL' })
+      }).catch(() => {});
+    } catch (e) {}
     showToast('All responses cleared');
     renderDashboard();
   }
@@ -1432,6 +1457,29 @@
   function initRealtimeSync() {
     let lastKnownCount = getEntries().length;
 
+    async function syncWithServerFile() {
+      try {
+        const res = await fetch('/api/feedbacks');
+        if (res.ok) {
+          const serverEntries = await res.json();
+          if (Array.isArray(serverEntries)) {
+            const localEntries = getEntries();
+            const byId = new Map();
+            serverEntries.forEach(e => { if (e && e.id) byId.set(e.id, e); });
+            localEntries.forEach(e => { if (e && e.id && !byId.has(e.id)) byId.set(e.id, e); });
+            const merged = Array.from(byId.values()).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+            if (merged.length !== localEntries.length) {
+              setEntries(merged);
+              refreshIfChanged('server_file_sync');
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Load initial central server data
+    syncWithServerFile();
+
     function refreshIfChanged(reason) {
       const currentEntries = getEntries();
       const countEl = document.getElementById('showing-count-text');
@@ -1460,6 +1508,7 @@
         const channel = new BroadcastChannel('xacro_feedback_channel');
         channel.onmessage = (event) => {
           if (event.data && (event.data.type === 'NEW_FEEDBACK' || event.data.type === 'NEW_FEEDBACK_SUBMITTED')) {
+            syncWithServerFile();
             refreshIfChanged('broadcast');
           }
         };
@@ -1471,12 +1520,14 @@
     // 2. Window Storage Event (cross-window/tab local storage changes)
     window.addEventListener('storage', (e) => {
       if (e.key === STORAGE_KEY || e.key === PROPERTIES_KEY || e.key === ROOMS_KEY || e.key === 'srs_active_draft') {
+        syncWithServerFile();
         refreshIfChanged('storage_event');
       }
     });
 
     // 3. Periodic Polling Ticker (2.5 second fail-safe fallback)
     setInterval(() => {
+      syncWithServerFile();
       refreshIfChanged('polling');
     }, 2500);
 
@@ -1487,11 +1538,13 @@
         e.preventDefault();
         const icon = syncBtn.querySelector('i');
         if (icon) icon.classList.add('fa-spin');
-        refreshIfChanged('force');
-        showToast('Database synchronized & refreshed! 🔄');
-        setTimeout(() => {
-          if (icon) icon.classList.remove('fa-spin');
-        }, 600);
+        syncWithServerFile().then(() => {
+          refreshIfChanged('force');
+          showToast('Database synchronized & refreshed! 🔄');
+          setTimeout(() => {
+            if (icon) icon.classList.remove('fa-spin');
+          }, 600);
+        });
       });
     }
   }
