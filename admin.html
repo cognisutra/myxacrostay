@@ -129,9 +129,9 @@
     <div>
       <!-- Brand Logo / Title -->
       <div class="p-6 border-b border-white/10 flex items-center gap-3.5">
-        <img src="images/logo.jpeg" alt="Silver Rain Logo" class="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-lg">
+        <img src="images/logo.jpeg" alt="Xacro Logo" class="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-lg">
         <div>
-          <span class="text-[10px] font-extrabold tracking-widest text-champagne block uppercase">Silver Rain Suites</span>
+          <span class="text-[10px] font-extrabold tracking-widest text-champagne block uppercase">XACRO EXPERIENCES</span>
           <h1 class="font-display text-lg font-bold text-mist tracking-tight leading-none">Admin Hub</h1>
         </div>
       </div>
@@ -141,6 +141,12 @@
         <button type="button" class="sidebar-link w-full is-active" data-tab="tab-overview">
           <i class="fa-solid fa-chart-pie text-base"></i>
           <span>Analytics & KPIs</span>
+        </button>
+
+        <button type="button" class="sidebar-link w-full" data-tab="tab-properties">
+          <i class="fa-solid fa-hotel text-base"></i>
+          <span>Hotel Portfolio</span>
+          <span id="nav-prop-badge" class="ml-auto text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-champagne/20 text-champagne border border-champagne/30">4</span>
         </button>
 
         <button type="button" class="sidebar-link w-full" data-tab="tab-feedbacks">
@@ -200,6 +206,16 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2.5">
+        <div class="flex items-center gap-2 bg-ink-soft/90 border border-champagne/40 rounded-xl px-3 py-2 shadow-lg">
+          <i class="fa-solid fa-hotel text-champagne text-xs"></i>
+          <span class="text-[11px] text-mist/60 font-semibold hidden sm:inline">Active Hotel:</span>
+          <select id="header-property-select" class="bg-transparent text-xs font-bold text-champagne focus:outline-none cursor-pointer">
+            <option value="ALL">🌐 All Xacro Properties (Portfolio View)</option>
+          </select>
+        </div>
+        <button id="quick-add-property" class="btn btn-dark-ghost text-xs py-2.5 px-3 flex items-center gap-1.5" title="Add New Hotel">
+          <i class="fa-solid fa-circle-plus text-emerald-400"></i> + Hotel
+        </button>
         <button id="quick-export-csv" class="btn btn-dark-ghost text-xs py-2.5 px-3.5 flex items-center gap-1.5">
           <i class="fa-solid fa-file-csv text-champagne"></i> Export CSV
         </button>
@@ -280,15 +296,78 @@
       </div>
     </div>
 
+    <!-- TAB: HOTEL PORTFOLIO MANAGEMENT -->
+    <div id="tab-properties" class="tab-content space-y-6 hidden">
+      <!-- Portfolio Overview Banner -->
+      <div class="p-6 rounded-2xl bg-gradient-to-r from-champagne/20 via-ink-soft to-ink-soft border border-champagne/30 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-champagne text-ink">Xacro Experiences</span>
+            <span class="text-xs text-mist/60 font-semibold">Multi-Property Command Center</span>
+          </div>
+          <h3 class="font-display text-2xl font-bold text-mist">Hotel Portfolio & Property Controls</h3>
+          <p class="text-xs text-mist/70 mt-1 max-w-2xl">Manage all Xacro luxury hotels, customize room inventories, monitor separate feedback streams, and launch new properties effortlessly.</p>
+        </div>
+        <button type="button" id="btn-add-property-tab" class="btn btn-champagne py-3 px-5 text-xs font-bold flex items-center gap-2 rounded-xl shadow-lg">
+          <i class="fa-solid fa-plus-circle text-sm"></i> Add New Hotel Property
+        </button>
+      </div>
+
+      <!-- Portfolio High-Level KPIs -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold text-mist/60 uppercase">Total Properties</span>
+            <i class="fa-solid fa-hotel text-champagne"></i>
+          </div>
+          <p class="font-display text-2xl font-bold text-mist" id="prop-stat-count">4</p>
+          <p class="text-[10px] text-emerald-400 mt-1 font-semibold">Xacro Group Hotels</p>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold text-mist/60 uppercase">Portfolio Rooms</span>
+            <i class="fa-solid fa-door-open text-blue-400"></i>
+          </div>
+          <p class="font-display text-2xl font-bold text-mist" id="prop-stat-rooms">59</p>
+          <p class="text-[10px] text-mist/50 mt-1">Across all properties</p>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold text-mist/60 uppercase">Total Feedbacks</span>
+            <i class="fa-solid fa-comments text-amber-400"></i>
+          </div>
+          <p class="font-display text-2xl font-bold text-mist" id="prop-stat-feedbacks">0</p>
+          <p class="text-[10px] text-mist/50 mt-1">Combined responses</p>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-bold text-mist/60 uppercase">Portfolio CSAT</span>
+            <i class="fa-solid fa-star text-champagne"></i>
+          </div>
+          <p class="font-display text-2xl font-bold text-mist" id="prop-stat-csat">—</p>
+          <p class="text-[10px] text-emerald-400 mt-1 font-semibold">Average Rating</p>
+        </div>
+      </div>
+
+      <!-- Properties Cards Grid -->
+      <div id="properties-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Rendered dynamically by JS -->
+      </div>
+    </div>
+
     <!-- TAB 2: FEEDBACKS -->
     <div id="tab-feedbacks" class="tab-content space-y-6">
       <!-- Toolbar Filter Controls -->
       <div class="glass-panel p-4 flex flex-wrap items-center gap-3">
-        <div class="relative flex-1 min-w-[220px]">
+        <div class="relative flex-1 min-w-[200px]">
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-mist/40"></i>
           <input id="search-input" type="text" placeholder="Search by guest name, room, comments…"
                  class="field-input pl-9 text-xs bg-ink-soft/80 border-white/10 text-mist placeholder:text-mist/40">
         </div>
+
+        <select id="filter-property" class="field-input w-auto text-xs bg-ink-soft/80 border-champagne/40 text-champagne font-bold">
+          <option value="ALL">All Properties</option>
+        </select>
 
         <select id="filter-recommend" class="field-input w-auto text-xs bg-ink-soft/80 border-white/10 text-mist">
           <option value="">All Recommendations</option>
@@ -326,13 +405,19 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-mist-line">
           <div>
             <h3 class="text-base font-bold text-ink flex items-center gap-2">
-              <i class="fa-solid fa-door-open text-champagne"></i> Room Inventory Management (21 Rooms)
+              <i class="fa-solid fa-door-open text-champagne"></i> Room Inventory Control
             </h3>
-            <p class="text-xs text-storm/70 mt-0.5">Manage hotel room numbers, categories, and room types</p>
+            <p class="text-xs text-storm/70 mt-0.5" id="room-tab-subtitle">Manage hotel room numbers, categories, and room types for selected property</p>
           </div>
-          <button type="button" id="reset-rooms-btn" class="btn btn-ghost text-xs py-2 px-3">
-            <i class="fa-solid fa-rotate-left"></i> Reset to Default 21 Rooms
-          </button>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-storm/70">Property:</span>
+            <select id="room-property-select" class="field-input w-auto text-xs py-1.5 px-3 bg-white font-bold text-ink border-champagne/40">
+              <!-- Rendered dynamically -->
+            </select>
+            <button type="button" id="reset-rooms-btn" class="btn btn-ghost text-xs py-2 px-3">
+              <i class="fa-solid fa-rotate-left"></i> Reset Rooms
+            </button>
+          </div>
         </div>
 
         <!-- Add Room Form -->
@@ -349,6 +434,9 @@
               <option value="Executive Room">Executive Room</option>
               <option value="Twin Bed Room">Twin Bed Room</option>
               <option value="Deluxe Room">Deluxe Room</option>
+              <option value="Ocean View Villa">Ocean View Villa</option>
+              <option value="Beachfront Suite">Beachfront Suite</option>
+              <option value="Eco Cottage">Eco Cottage</option>
             </select>
           </div>
           <div class="flex items-end">
@@ -448,6 +536,64 @@
     </div>
 
   </main>
+</div>
+
+<!-- ============ ADD/EDIT PROPERTY MODAL ============ -->
+<div id="property-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-ink-soft border border-champagne/30 rounded-2xl w-full max-w-lg p-6 sm:p-8 shadow-2xl space-y-5">
+    <div class="flex items-center justify-between border-b border-white/10 pb-4">
+      <div>
+        <span class="text-[10px] font-extrabold text-champagne uppercase tracking-widest">XACRO EXPERIENCES</span>
+        <h3 id="prop-modal-title" class="font-display text-xl font-bold text-mist">Add New Hotel Property</h3>
+      </div>
+      <button id="close-prop-modal" class="text-mist/60 hover:text-mist p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+
+    <form id="prop-form" class="space-y-4">
+      <input type="hidden" id="prop-edit-id" value="">
+      <div>
+        <label class="block text-xs font-bold text-mist/80 mb-1">Property / Hotel Name *</label>
+        <input type="text" id="prop-form-name" class="w-full px-3.5 py-2.5 rounded-xl bg-ink/70 border border-white/10 text-mist text-sm font-semibold focus:outline-none focus:border-champagne" placeholder="e.g. Xacro Heritage Palace" required>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-mist/80 mb-1">Short Code *</label>
+          <input type="text" id="prop-form-code" class="w-full px-3.5 py-2.5 rounded-xl bg-ink/70 border border-white/10 text-mist text-sm font-semibold focus:outline-none focus:border-champagne uppercase" placeholder="e.g. XRH" maxlength="5" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-mist/80 mb-1">City / Location *</label>
+          <input type="text" id="prop-form-city" class="w-full px-3.5 py-2.5 rounded-xl bg-ink/70 border border-white/10 text-mist text-sm font-semibold focus:outline-none focus:border-champagne" placeholder="e.g. Jaipur" required>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-mist/80 mb-1">Tagline / Subtitle</label>
+        <input type="text" id="prop-form-tagline" class="w-full px-3.5 py-2.5 rounded-xl bg-ink/70 border border-white/10 text-mist text-sm focus:outline-none focus:border-champagne" placeholder="e.g. Royal Heritage & Spa Resort">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-mist/80 mb-1">Accent Theme Color</label>
+          <input type="color" id="prop-form-color" class="w-full h-10 p-1 rounded-xl bg-ink/70 border border-white/10 cursor-pointer" value="#B9924F">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-mist/80 mb-1">Operational Status</label>
+          <select id="prop-form-status" class="w-full px-3.5 py-2.5 rounded-xl bg-ink/70 border border-white/10 text-mist text-sm font-semibold focus:outline-none focus:border-champagne">
+            <option value="Active">Active</option>
+            <option value="Opening Soon">Opening Soon</option>
+            <option value="Renovating">Renovating</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-mist/80 mb-1">Initial Rooms (comma separated)</label>
+        <input type="text" id="prop-form-rooms" class="w-full px-3.5 py-2.5 rounded-xl bg-ink/70 border border-white/10 text-mist text-sm focus:outline-none focus:border-champagne" placeholder="e.g. 101, 102, 103, 104, 201, 202">
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+        <button type="button" id="cancel-prop-modal" class="btn btn-dark-ghost py-2.5 px-4 text-xs font-bold">Cancel</button>
+        <button type="submit" class="btn btn-champagne py-2.5 px-5 text-xs font-bold">Save Property</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Toast notification element -->

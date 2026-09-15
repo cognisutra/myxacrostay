@@ -10,29 +10,113 @@
 
   const STORAGE_KEY = 'srs_feedbacks';
   const ROOMS_KEY = 'srs_rooms';
-  const DEFAULT_ROOMS = [
-    { number: '001', type: 'Suite Room' },
-    { number: '002', type: 'Standard Room' },
-    { number: '003', type: 'Executive Room' },
-    { number: '004', type: 'Standard Room' },
-    { number: '005', type: 'Standard Room' },
-    { number: '006', type: 'Standard Room' },
-    { number: '007', type: 'Standard Room' },
-    { number: '008', type: 'Standard Room' },
-    { number: '101', type: 'Suite Room' },
-    { number: '102', type: 'Standard Room' },
-    { number: '103', type: 'Standard Room' },
-    { number: '104', type: 'Executive Room' },
-    { number: '105', type: 'Standard Room' },
-    { number: '106', type: 'Standard Room' },
-    { number: '107', type: 'Standard Room' },
-    { number: '108', type: 'Twin Bed Room' },
-    { number: '109', type: 'Twin Bed Room' },
-    { number: '201', type: 'Standard Room' },
-    { number: '202', type: 'Standard Room' },
-    { number: '203', type: 'Standard Room' },
-    { number: '204', type: 'Suite Room' },
+  const PROPERTIES_KEY = 'srs_properties';
+  const DEFAULT_PROPERTIES = [
+    {
+      id: 'srs',
+      name: 'Silver Rain Suites',
+      shortCode: 'SRS',
+      brand: 'Xacro Experiences',
+      tagline: 'Luxury Boutique Suites',
+      city: 'Bengaluru',
+      status: 'Active',
+      accentColor: '#B9924F',
+      rooms: [
+        { number: '001', type: 'Suite Room' },
+        { number: '002', type: 'Standard Room' },
+        { number: '003', type: 'Executive Room' },
+        { number: '004', type: 'Standard Room' },
+        { number: '005', type: 'Standard Room' },
+        { number: '006', type: 'Standard Room' },
+        { number: '007', type: 'Standard Room' },
+        { number: '008', type: 'Standard Room' },
+        { number: '101', type: 'Suite Room' },
+        { number: '102', type: 'Standard Room' },
+        { number: '103', type: 'Standard Room' },
+        { number: '104', type: 'Executive Room' },
+        { number: '105', type: 'Standard Room' },
+        { number: '106', type: 'Standard Room' },
+        { number: '107', type: 'Standard Room' },
+        { number: '108', type: 'Twin Bed Room' },
+        { number: '109', type: 'Twin Bed Room' },
+        { number: '201', type: 'Standard Room' },
+        { number: '202', type: 'Standard Room' },
+        { number: '203', type: 'Standard Room' },
+        { number: '204', type: 'Suite Room' }
+      ]
+    },
+    {
+      id: 'xab',
+      name: 'Xacro Azure Beach Resort',
+      shortCode: 'XAB',
+      brand: 'Xacro Experiences',
+      tagline: 'Luxury Oceanfront & Villas',
+      city: 'Goa',
+      status: 'Active',
+      accentColor: '#0EA5E9',
+      rooms: [
+        { number: '101', type: 'Ocean View Villa' },
+        { number: '102', type: 'Ocean View Villa' },
+        { number: '103', type: 'Beachfront Suite' },
+        { number: '104', type: 'Beachfront Suite' },
+        { number: '105', type: 'Standard Room' },
+        { number: '106', type: 'Standard Room' },
+        { number: '107', type: 'Executive Suite' },
+        { number: '201', type: 'Sunset Villa' },
+        { number: '202', type: 'Sunset Villa' },
+        { number: '203', type: 'Royal Beach Villa' }
+      ]
+    },
+    {
+      id: 'xpg',
+      name: 'Xacro Pinnacle Grand',
+      shortCode: 'XPG',
+      brand: 'Xacro Experiences',
+      tagline: 'Urban Luxury & Business Tower',
+      city: 'Mumbai',
+      status: 'Active',
+      accentColor: '#8B5CF6',
+      rooms: [
+        { number: '301', type: 'Executive Room' },
+        { number: '302', type: 'Executive Room' },
+        { number: '303', type: 'Standard Room' },
+        { number: '304', type: 'Standard Room' },
+        { number: '401', type: 'Suite Room' },
+        { number: '402', type: 'Suite Room' },
+        { number: '501', type: 'Presidential Suite' },
+        { number: '502', type: 'Royal Penthouse' }
+      ]
+    },
+    {
+      id: 'xsr',
+      name: 'Xacro Sanctuary Retreat',
+      shortCode: 'XSR',
+      brand: 'Xacro Experiences',
+      tagline: 'Eco Wellness & Plantation Villas',
+      city: 'Coorg',
+      status: 'Active',
+      accentColor: '#10B981',
+      rooms: [
+        { number: 'C01', type: 'Eco Cottage' },
+        { number: 'C02', type: 'Eco Cottage' },
+        { number: 'C03', type: 'Eco Cottage' },
+        { number: 'T01', type: 'Treehouse Villa' },
+        { number: 'T02', type: 'Treehouse Villa' },
+        { number: 'V01', type: 'Private Pool Villa' }
+      ]
+    }
   ];
+
+  function getProperties() {
+    try {
+      const stored = localStorage.getItem(PROPERTIES_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_PROPERTIES;
+  }
 
   function escapeHTML(str) {
     const div = document.createElement('div');
@@ -40,30 +124,38 @@
     return div.innerHTML;
   }
 
-  function getRooms() {
-    try {
-      const stored = localStorage.getItem(ROOMS_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(r => {
-            if (typeof r === 'string') {
-              const defaultMatch = DEFAULT_ROOMS.find(d => d.number === r);
-              return defaultMatch || { number: r, type: 'Standard Room' };
-            }
-            return r;
-          });
-        }
-      }
-    } catch (e) {}
-    return DEFAULT_ROOMS;
+  function populatePropertyDropdown() {
+    const propSelect = document.getElementById('f-property');
+    if (!propSelect) return;
+    const props = getProperties();
+    propSelect.innerHTML = props.map(p => 
+      `<option value="${escapeHTML(p.id)}">${escapeHTML(p.name)} — ${escapeHTML(p.city)}</option>`
+    ).join('');
+    propSelect.addEventListener('change', () => {
+      populateRoomDropdown(propSelect.value);
+    });
+    populateRoomDropdown(propSelect.value || (props[0] && props[0].id) || 'srs');
   }
 
-  function populateRoomDropdown() {
+  function populateRoomDropdown(propertyId) {
     const select = document.getElementById('f-room');
     if (!select) return;
+    const props = getProperties();
+    const targetId = propertyId || (props[0] && props[0].id) || 'srs';
+    const prop = props.find(p => p.id === targetId) || props[0];
+    let rooms = (prop && prop.rooms) ? prop.rooms : [];
+    if (targetId === 'srs') {
+      try {
+        const stored = localStorage.getItem(ROOMS_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rooms = parsed.map(r => typeof r === 'string' ? { number: r, type: 'Standard Room' } : r);
+          }
+        }
+      } catch (e) {}
+    }
     const currentVal = select.value;
-    const rooms = getRooms();
     select.innerHTML = '<option value="">Select room...</option>' +
       rooms.map(r => `<option value="${escapeHTML(r.number)}">Room ${escapeHTML(r.number)} — ${escapeHTML(r.type)}</option>`).join('');
     select.value = currentVal;
@@ -610,9 +702,17 @@
   function collectPayload() {
     const checkIn = val('f-checkin');
     const checkOut = val('f-checkout');
+    const propSelect = document.getElementById('f-property');
+    const selectedPropId = propSelect ? propSelect.value : 'srs';
+    const props = getProperties();
+    const activeProp = props.find(p => p.id === selectedPropId) || props[0];
+
     return {
       id: 'fb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       submittedAt: new Date().toISOString(),
+      propertyId: activeProp ? activeProp.id : 'srs',
+      propertyName: activeProp ? activeProp.name : 'Silver Rain Suites',
+      propertyCode: activeProp ? activeProp.shortCode : 'SRS',
       guest: {
         name: val('f-name'),
         room: val('f-room'),
@@ -685,7 +785,7 @@
     buildCategorySteps();
     wirePillGroups();
     wireNav();
-    populateRoomDropdown();
+    populatePropertyDropdown();
 
     const fbDate = document.getElementById('f-fbdate');
     if (fbDate) fbDate.valueAsDate = new Date();
