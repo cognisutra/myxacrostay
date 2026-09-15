@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silver Rain Suites — Admin Command Center</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- AOS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.1/aos.css">
+<link rel="icon" type="image/jpeg" href="images/logo.jpeg">
+
+<!-- Tailwind (CDN, config inline) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: { ink:'#10161A', mist:'#EDF1F2', rain:'#7E97A0', storm:'#3C4A52', champagne:'#B9924F' },
+        fontFamily: { display:['Fraunces','serif'], body:['Manrope','sans-serif'] }
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .pin-dot{ width:14px; height:14px; border-radius:50%; border:2px solid var(--ink-line); transition: all .18s ease; }
+  .pin-dot.filled{ background: var(--champagne); border-color: var(--champagne); }
+  .keypad-btn{
+    width: clamp(58px,15vw,72px); height: clamp(58px,15vw,72px);
+    border-radius: 50%; border: 1px solid var(--ink-line);
+    background: rgba(237,241,242,0.03);
+    color: var(--mist); font-family:var(--font-display); font-size:22px;
+    display:flex; align-items:center; justify-content:center;
+    transition: all .15s ease; cursor:pointer;
+  }
+  .keypad-btn:hover{ background: rgba(237,241,242,0.09); border-color: var(--rain); }
+  .keypad-btn:active{ transform: scale(.94); }
+  .shake{ animation: shake .4s ease; }
+  @keyframes shake{ 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+
+  .stat-card{ background:#fff; border:1px solid var(--mist-line); border-radius:18px; padding:20px; box-shadow: 0 4px 16px -4px rgba(0,0,0,0.06); }
+  .bar-track{ height:8px; background:var(--mist-dim); border-radius:999px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:999px; background:linear-gradient(90deg,var(--rain),var(--champagne)); }
+  .entry-card{ background:#fff; border:1px solid var(--mist-line); border-radius:16px; transition: border-color .18s ease, box-shadow .18s ease; }
+  .entry-card:hover{ border-color: var(--rain); box-shadow: 0 6px 20px -6px rgba(0,0,0,0.08); }
+  .tag{ font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:999px; }
+  .tag-yes{ background:#E4F0E8; color:#2F6B47; }
+  .tag-maybe{ background:#F2ECDD; color:#8A6A1F; }
+  .tag-no{ background:#F5E4E2; color:#A63B32; }
+  .mini-drop{ width:9px; height:9px; border-radius:60% 60% 60% 4%; transform:rotate(45deg); display:inline-block; }
+</style>
+</head>
+<body class="font-body bg-ink text-mist min-h-screen">
+
+<canvas id="rain-canvas" aria-hidden="true"></canvas>
+<div class="stage-glow" aria-hidden="true"></div>
+<div class="bg-mesh" aria-hidden="true"></div>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="login-screen" class="relative z-10 min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-[380px] text-center" data-aos="fade-up">
+    <div class="mb-5">
+      <img src="images/logo.jpeg" alt="Silver Rain Suites" class="h-28 mx-auto object-contain rounded-2xl shadow-xl border border-white/10 p-2 bg-white">
+    </div>
+    <p class="text-[12px] font-bold tracking-widest uppercase mb-2" style="color:var(--rain)">SILVER RAIN SUITES</p>
+    <h1 class="font-display text-[28px] text-mist mb-1">Admin Access</h1>
+    <p class="text-[13px] mb-8" style="color:var(--mist); opacity:.55">Enter 6-digit Security PIN to launch Command Center</p>
+
+    <div class="flex items-center justify-center gap-3 mb-9" id="pin-dots">
+      <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+      <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4 justify-items-center mb-6" id="keypad">
+      <button class="keypad-btn" data-key="1">1</button>
+      <button class="keypad-btn" data-key="2">2</button>
+      <button class="keypad-btn" data-key="3">3</button>
+      <button class="keypad-btn" data-key="4">4</button>
+      <button class="keypad-btn" data-key="5">5</button>
+      <button class="keypad-btn" data-key="6">6</button>
+      <button class="keypad-btn" data-key="7">7</button>
+      <button class="keypad-btn" data-key="8">8</button>
+      <button class="keypad-btn" data-key="9">9</button>
+      <button class="keypad-btn" id="pin-clear" aria-label="Clear"><i class="fa-solid fa-xmark text-base"></i></button>
+      <button class="keypad-btn" data-key="0">0</button>
+      <button class="keypad-btn" id="pin-back" aria-label="Backspace"><i class="fa-solid fa-delete-left text-base"></i></button>
+    </div>
+
+    <p id="pin-error" class="text-[12.5px] h-4" style="color:#D98079"></p>
+
+    <a href="index.html" class="inline-block mt-6 text-[12.5px] hover:text-champagne transition-colors" style="color:var(--mist); opacity:.55">
+      <i class="fa-solid fa-arrow-left mr-1"></i>Back to guest feedback form
+    </a>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD CONTAINER ============ -->
+<div id="dashboard-screen" class="relative z-10 min-h-screen flex flex-col md:flex-row hidden">
+  
+  <!-- Mobile Navigation Bar -->
+  <header class="md:hidden flex items-center justify-between p-4 bg-ink-soft/90 backdrop-blur-md border-b border-white/10 z-20 sticky top-0">
+    <div class="flex items-center gap-3">
+      <img src="images/logo.jpeg" alt="Silver Rain Logo" class="h-8 w-8 rounded-lg object-contain bg-white p-0.5">
+      <div>
+        <h1 class="font-display text-sm font-semibold text-mist">Silver Rain</h1>
+        <p class="text-[10px] text-rain uppercase tracking-wider font-bold">Admin Hub</p>
+      </div>
+    </div>
+    <button id="sidebar-toggle" class="p-2 text-mist hover:text-champagne transition-colors" aria-label="Toggle Navigation">
+      <i class="fa-solid fa-bars text-lg"></i>
+    </button>
+  </header>
+
+  <!-- Left Sidebar Navigation -->
+  <aside id="sidebar" class="w-64 shrink-0 bg-ink-soft/95 backdrop-blur-xl border-r border-white/10 flex flex-col justify-between hidden md:flex min-h-screen z-30 transition-all">
+    <div>
+      <!-- Brand Logo / Title -->
+      <div class="p-6 border-b border-white/10 flex items-center gap-3.5">
+        <img src="images/logo.jpeg" alt="Silver Rain Logo" class="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-lg">
+        <div>
+          <span class="text-[10px] font-extrabold tracking-widest text-champagne block uppercase">Silver Rain Suites</span>
+          <h1 class="font-display text-lg font-bold text-mist tracking-tight leading-none">Admin Hub</h1>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="p-4 space-y-1.5" id="sidebar-nav">
+        <button type="button" class="sidebar-link w-full is-active" data-tab="tab-overview">
+          <i class="fa-solid fa-chart-pie text-base"></i>
+          <span>Analytics & KPIs</span>
+        </button>
+
+        <button type="button" class="sidebar-link w-full" data-tab="tab-feedbacks">
+          <i class="fa-solid fa-comments text-base"></i>
+          <span>Guest Feedbacks</span>
+          <span id="nav-count-badge" class="ml-auto text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-champagne/20 text-champagne border border-champagne/30">0</span>
+        </button>
+
+        <button type="button" class="sidebar-link w-full" data-tab="tab-rooms">
+          <i class="fa-solid fa-door-open text-base"></i>
+          <span>Room Control</span>
+          <span id="nav-room-badge" class="ml-auto text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-white/10 text-mist/70 border border-white/10">0</span>
+        </button>
+
+        <button type="button" class="sidebar-link w-full" data-tab="tab-insights">
+          <i class="fa-solid fa-heart-pulse text-base"></i>
+          <span>Staff & Voice</span>
+        </button>
+
+        <button type="button" class="sidebar-link w-full" data-tab="tab-settings">
+          <i class="fa-solid fa-sliders text-base"></i>
+          <span>Data & Controls</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-4 border-t border-white/10 space-y-3">
+      <div class="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></div>
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold text-mist/90 truncate">Telemetry Active</p>
+            <p class="text-[10px] text-mist/50 truncate" id="system-time">Live Sync</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="index.html" class="sidebar-link flex-1 py-2 text-xs justify-center" title="Open Guest Form">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Guest Form
+        </a>
+        <button id="logout-btn" class="sidebar-link py-2 px-3 text-xs justify-center hover:text-red-400" title="Logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Body -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-7 overflow-y-auto">
+    <!-- Top Header Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10">
+      <div>
+        <h2 id="page-title" class="font-display text-2xl font-bold text-mist">Analytics & KPIs</h2>
+        <p id="page-subtitle" class="text-xs text-mist/60 mt-0.5">Real-time telemetry and guest experience insights</p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button id="quick-export-csv" class="btn btn-dark-ghost text-xs py-2.5 px-3.5 flex items-center gap-1.5">
+          <i class="fa-solid fa-file-csv text-champagne"></i> Export CSV
+        </button>
+        <button id="quick-export-json" class="btn btn-champagne text-xs py-2.5 px-3.5 flex items-center gap-1.5">
+          <i class="fa-solid fa-file-export"></i> Export JSON
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 1: OVERVIEW & ANALYTICS -->
+    <div id="tab-overview" class="tab-content is-active space-y-7">
+      <!-- Stat Cards Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-storm/70">TOTAL RESPONSES</span>
+            <i class="fa-solid fa-inbox text-champagne text-sm"></i>
+          </div>
+          <p class="font-display text-3xl font-bold text-ink" id="stat-total">0</p>
+          <p class="text-[11px] text-storm/60 mt-1 flex items-center gap-1">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Saved in local database
+          </p>
+        </div>
+
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-storm/70">AVG. OVERALL RATING</span>
+            <i class="fa-solid fa-star text-champagne text-sm"></i>
+          </div>
+          <p class="font-display text-3xl font-bold text-ink" id="stat-avg">—</p>
+          <p class="text-[11px] text-storm/60 mt-1">Out of 5.0 rating scale</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-storm/70">WOULD RECOMMEND</span>
+            <i class="fa-solid fa-thumbs-up text-champagne text-sm"></i>
+          </div>
+          <p class="font-display text-3xl font-bold text-ink" id="stat-recommend">—</p>
+          <p class="text-[11px] text-storm/60 mt-1">Positive recommendation rate</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-storm/70">LAST 7 DAYS</span>
+            <i class="fa-solid fa-calendar-week text-champagne text-sm"></i>
+          </div>
+          <p class="font-display text-3xl font-bold text-ink" id="stat-recent">0</p>
+          <p class="text-[11px] text-storm/60 mt-1">Recent stay feedbacks</p>
+        </div>
+      </div>
+
+      <!-- Performance Charts Grid -->
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Category averages -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Category Performance</h3>
+              <p class="text-xs text-storm/60">Average score across 8 experience touchpoints</p>
+            </div>
+            <i class="fa-solid fa-chart-bar text-rain"></i>
+          </div>
+          <div id="category-bars" class="space-y-4"></div>
+        </div>
+
+        <!-- Rating Distribution -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <h3 class="text-sm font-bold text-ink">Rating Breakdown</h3>
+              <p class="text-xs text-storm/60">Distribution of overall guest ratings</p>
+            </div>
+            <i class="fa-solid fa-chart-line text-champagne"></i>
+          </div>
+          <div id="rating-breakdown" class="space-y-3.5"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: FEEDBACKS -->
+    <div id="tab-feedbacks" class="tab-content space-y-6">
+      <!-- Toolbar Filter Controls -->
+      <div class="glass-panel p-4 flex flex-wrap items-center gap-3">
+        <div class="relative flex-1 min-w-[220px]">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-mist/40"></i>
+          <input id="search-input" type="text" placeholder="Search by guest name, room, comments…"
+                 class="field-input pl-9 text-xs bg-ink-soft/80 border-white/10 text-mist placeholder:text-mist/40">
+        </div>
+
+        <select id="filter-recommend" class="field-input w-auto text-xs bg-ink-soft/80 border-white/10 text-mist">
+          <option value="">All Recommendations</option>
+          <option value="Yes">Recommends: Yes</option>
+          <option value="Maybe">Recommends: Maybe</option>
+          <option value="No">Recommends: No</option>
+        </select>
+
+        <select id="filter-rating" class="field-input w-auto text-xs bg-ink-soft/80 border-white/10 text-mist">
+          <option value="">All Ratings</option>
+          <option value="5">5 Stars (Excellent)</option>
+          <option value="4">4 Stars (Very Good)</option>
+          <option value="3">3 Stars (Good)</option>
+          <option value="low">1 - 2 Stars (Needs Care)</option>
+        </select>
+
+        <button id="clear-all-btn" class="btn btn-ghost text-xs py-2 px-3 border-red-500/30 text-red-400 hover:bg-red-500/10">
+          <i class="fa-solid fa-trash"></i> Clear All
+        </button>
+      </div>
+
+      <!-- Entries list -->
+      <div id="entries-list" class="space-y-4"></div>
+
+      <div id="empty-state" class="text-center py-16 hidden">
+        <i class="fa-regular fa-comment-dots text-4xl mb-4 text-mist/20"></i>
+        <p class="font-display text-xl text-mist/80 mb-1">No feedback found</p>
+        <p class="text-xs text-mist/50">Try clearing filters or check back after guests submit responses.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: ROOM CONTROL -->
+    <div id="tab-rooms" class="tab-content space-y-6">
+      <div class="stat-card">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-mist-line">
+          <div>
+            <h3 class="text-base font-bold text-ink flex items-center gap-2">
+              <i class="fa-solid fa-door-open text-champagne"></i> Room Inventory Management (21 Rooms)
+            </h3>
+            <p class="text-xs text-storm/70 mt-0.5">Manage hotel room numbers, categories, and room types</p>
+          </div>
+          <button type="button" id="reset-rooms-btn" class="btn btn-ghost text-xs py-2 px-3">
+            <i class="fa-solid fa-rotate-left"></i> Reset to Default 21 Rooms
+          </button>
+        </div>
+
+        <!-- Add Room Form -->
+        <form id="add-room-form" class="grid sm:grid-cols-3 gap-3 mb-6 p-4 rounded-xl bg-mist/30 border border-mist-line">
+          <div>
+            <label class="field-label text-xs mb-1" for="new-room-input">Room Number</label>
+            <input id="new-room-input" type="text" placeholder="e.g. 110, 301" class="field-input text-xs py-2" required>
+          </div>
+          <div>
+            <label class="field-label text-xs mb-1" for="new-room-type">Room Type</label>
+            <select id="new-room-type" class="field-input text-xs py-2">
+              <option value="Standard Room">Standard Room</option>
+              <option value="Suite Room">Suite Room</option>
+              <option value="Executive Room">Executive Room</option>
+              <option value="Twin Bed Room">Twin Bed Room</option>
+              <option value="Deluxe Room">Deluxe Room</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="btn btn-primary text-xs py-2 px-4 w-full">
+              <i class="fa-solid fa-plus"></i> Add Room
+            </button>
+          </div>
+        </form>
+
+        <!-- Room Type Category Summaries -->
+        <div id="room-type-counts" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"></div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-storm/60">Active Room Inventory</h4>
+          <select id="filter-room-type" class="field-input w-auto text-xs py-1.5 px-3 bg-white">
+            <option value="">All Room Types</option>
+            <option value="Suite Room">Suite Rooms</option>
+            <option value="Executive Room">Executive Rooms</option>
+            <option value="Twin Bed Room">Twin Bed Rooms</option>
+            <option value="Standard Room">Standard Rooms</option>
+          </select>
+        </div>
+
+        <div id="rooms-pill-list" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: STAFF & VOICE -->
+    <div id="tab-insights" class="tab-content space-y-6">
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Staff Recognition Feed -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-ink flex items-center gap-2">
+              <i class="fa-solid fa-award text-champagne"></i> Recognized Staff & Team Members
+            </h3>
+            <span id="staff-count-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-champagne/15 text-champagne">0 Recognized</span>
+          </div>
+          <div id="staff-wall-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Highlights & Improvement Ideas -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-ink flex items-center gap-2">
+              <i class="fa-solid fa-heart text-rain"></i> Guest Voice Highlights
+            </h3>
+          </div>
+          <div id="insights-highlights-list" class="space-y-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: DATA & CONTROLS -->
+    <div id="tab-settings" class="tab-content space-y-6">
+      <div class="stat-card space-y-6">
+        <div>
+          <h3 class="text-base font-bold text-ink mb-1">Data Backup & Export Controls</h3>
+          <p class="text-xs text-storm/70">Manage stored guest feedback entries, export data, and system safety.</p>
+        </div>
+
+        <div class="grid sm:grid-cols-3 gap-4 pt-2">
+          <button id="export-json-btn-tab" class="p-5 rounded-2xl border border-mist-line bg-mist/30 hover:border-champagne text-left transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-champagne/15 text-champagne flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-file-code text-lg"></i>
+            </div>
+            <h4 class="text-sm font-bold text-ink">Export JSON Backup</h4>
+            <p class="text-xs text-storm/60 mt-1">Full raw dataset formatted for system imports and backups.</p>
+          </button>
+
+          <button id="export-csv-btn-tab" class="p-5 rounded-2xl border border-mist-line bg-mist/30 hover:border-champagne text-left transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-file-csv text-lg"></i>
+            </div>
+            <h4 class="text-sm font-bold text-ink">Export CSV Spreadsheet</h4>
+            <p class="text-xs text-storm/60 mt-1">Formatted spreadsheet compatible with Excel / Google Sheets.</p>
+          </button>
+
+          <label class="p-5 rounded-2xl border border-mist-line bg-mist/30 hover:border-champagne text-left transition-all cursor-pointer group">
+            <div class="w-10 h-10 rounded-xl bg-rain/15 text-rain flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-file-import text-lg"></i>
+            </div>
+            <h4 class="text-sm font-bold text-ink">Import Backup JSON</h4>
+            <p class="text-xs text-storm/60 mt-1">Merge or restore feedback entries from exported JSON files.</p>
+            <input type="file" id="import-input-tab" accept="application/json" class="hidden">
+          </label>
+        </div>
+
+        <div class="pt-6 border-t border-mist-line flex items-center justify-between">
+          <div>
+            <h4 class="text-sm font-bold text-ink">Security PIN</h4>
+            <p class="text-xs text-storm/60">Admin panel authentication PIN code (Default: <code class="bg-mist px-1.5 py-0.5 rounded font-mono text-ink">845416</code>)</p>
+          </div>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full"><i class="fa-solid fa-shield-check mr-1"></i>Protected</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast notification element -->
+<div id="toast"><i class="fa-solid fa-circle-check" style="color:var(--champagne)"></i><span id="toast-msg"></span></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.1/aos.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

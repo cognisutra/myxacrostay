@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Silver Rain Suites — Guest Feedback</title>
+<meta name="description" content="Share your stay experience with Silver Rain Suites.">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/jpeg" href="images/logo.jpeg">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- AOS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.1/aos.css">
+
+<!-- Tailwind (CDN, config inline) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: '#10161A',
+          mist: '#EDF1F2',
+          rain: '#7E97A0',
+          storm: '#3C4A52',
+          champagne: '#B9924F',
+        },
+        fontFamily: {
+          display: ['Fraunces', 'serif'],
+          body: ['Manrope', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="font-body">
+
+<canvas id="rain-canvas" aria-hidden="true"></canvas>
+<div class="stage-glow" aria-hidden="true"></div>
+<div class="bg-mesh" aria-hidden="true"></div>
+
+<div class="relative z-10 min-h-screen flex items-center justify-center px-4 py-10 sm:py-14">
+  <div class="w-full max-w-[640px]">
+
+    <!-- progress -->
+    <div id="progress-wrap" class="hidden mb-7 px-1">
+      <div class="flex items-center justify-between mb-3">
+        <span id="progress-step-label" class="text-[12px] tracking-wide text-mist/60 font-semibold">Step 1</span>
+        <button type="button" id="save-exit-btn" class="text-[12px] text-mist/50 hover:text-champagne transition-colors">
+          <i class="fa-solid fa-cloud-arrow-up mr-1"></i>Autosaved
+        </button>
+      </div>
+      <div class="progress-rail">
+        <div class="progress-rail-fill" id="progress-fill" style="width:0%"></div>
+        <div class="progress-drop" id="progress-drop" style="left:0%">
+          <i class="fa-solid fa-droplet" style="display:none"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD -->
+    <div class="card p-7 sm:p-11" id="wizard-card">
+
+      <!-- ============ STEP: WELCOME ============ -->
+      <section class="step is-active" data-step="welcome">
+        <div class="text-center" data-aos="fade-up">
+          <div class="mb-5">
+            <img src="images/logo.jpeg" alt="Silver Rain Suites" class="h-28 sm:h-32 mx-auto object-contain rounded-2xl shadow-xl border border-mist-line p-2 bg-white">
+          </div>
+          <div class="mb-3">
+            <span class="playful-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> 3-Minute Quick Feedback</span>
+          </div>
+          <p class="text-[12px] font-extrabold tracking-widest text-rain-dim mb-2 uppercase" style="color:var(--rain-dim)">Silver Rain Suites</p>
+          <h1 class="font-display text-[clamp(28px,6vw,44px)] leading-[1.12] text-ink mb-4">
+            How was your stay?<br>Let's chat! ✨
+          </h1>
+          <p class="text-[15px] leading-relaxed max-w-[440px] mx-auto mb-8" style="color:var(--storm)">
+            Thank you for staying at Silver Rain Suites. We'd love your quick thoughts — every tap helps us make your next stay even more magical.
+          </p>
+          <button type="button" class="btn btn-champagne w-full sm:w-auto text-base py-3.5 px-8" data-next="welcome">
+            Start feedback <i class="fa-solid fa-sparkles ml-1"></i>
+          </button>
+          <p class="mt-5 text-[12.5px]" style="color:var(--storm); opacity:.7">Takes about 3 minutes · 8 fun rating taps</p>
+        </div>
+      </section>
+
+      <!-- ============ STEP: GUEST DETAILS ============ -->
+      <section class="step" data-step="details">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="playful-badge text-[11px] py-1 px-3">STEP 1 OF 10</span>
+        </div>
+        <p class="seq-label mb-2">WELCOME ABOARD ✨ <span class="font-normal" style="color:var(--storm);opacity:.6">(optional)</span></p>
+        <h2 class="font-display text-[26px] text-ink mb-7">A little about your stay 🏨</h2>
+
+        <div class="grid sm:grid-cols-2 gap-5 mb-2">
+          <div>
+            <label class="field-label" for="f-name">Guest name</label>
+            <input id="f-name" type="text" class="field-input" placeholder="Your name" autocomplete="name">
+          </div>
+          <div>
+            <label class="field-label" for="f-room">Room no.</label>
+            <select id="f-room" class="field-input">
+              <option value="">Select room...</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="f-checkin">Check-in date</label>
+            <input id="f-checkin" type="date" class="field-input" onclick="this.showPicker && this.showPicker()">
+          </div>
+          <div>
+            <label class="field-label" for="f-checkout">Check-out date</label>
+            <input id="f-checkout" type="date" class="field-input" onclick="this.showPicker && this.showPicker()">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="field-label" for="f-fbdate">Feedback date</label>
+            <input id="f-fbdate" type="date" class="field-input" onclick="this.showPicker && this.showPicker()">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between mt-9 gap-3">
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+          <div class="flex items-center gap-4">
+            <button type="button" class="skip-note" data-skip-to="cat-0">Skip this step</button>
+            <button type="button" class="btn btn-primary" data-next="details">Continue <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ STEPS: 8 CATEGORY RATINGS (templated by JS) ============ -->
+      <div id="category-steps"></div>
+
+      <!-- ============ STEP: HIGHLIGHTS ============ -->
+      <section class="step" data-step="highlights">
+        <p class="seq-label mb-2">IN YOUR WORDS 🌟</p>
+        <h2 class="font-display text-[26px] text-ink mb-7">Tell us your favorite moments!</h2>
+
+        <div class="mb-6">
+          <label class="field-label" for="f-highlight"><i class="fa-solid fa-face-smile mr-2 text-amber-500"></i>The highlight of your stay — what made you smile most? 😊</label>
+          <textarea id="f-highlight" class="field-textarea" placeholder="A cozy moment, a delicious breakfast, a friendly smile worth remembering…"></textarea>
+        </div>
+        <div>
+          <label class="field-label" for="f-improve"><i class="fa-solid fa-lightbulb mr-2 text-teal-600"></i>Make us better — what could we do differently next time? 💡</label>
+          <textarea id="f-improve" class="field-textarea" placeholder="Honest notes help us grow and surprise you next time…"></textarea>
+        </div>
+
+        <div class="flex items-center justify-between mt-9 gap-3">
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+          <button type="button" class="btn btn-primary" data-next="highlights">Continue <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </section>
+
+      <!-- ============ STEP: MORE FROM YOU ============ -->
+      <section class="step" data-step="more">
+        <p class="seq-label mb-2">A LITTLE MORE FROM YOU 🎈</p>
+        <h2 class="font-display text-[26px] text-ink mb-8">A few quick closing taps</h2>
+
+        <div class="mb-7">
+          <p class="field-label mb-3">Would you recommend Silver Rain Suites to friends or family? 👍</p>
+          <div class="pill-row" data-pillgroup="recommend">
+            <button type="button" class="pill-btn" data-value="Yes">Yes! Absolutely 🌟</button>
+            <button type="button" class="pill-btn" data-value="Maybe">Maybe 🤔</button>
+            <button type="button" class="pill-btn" data-value="No">Not likely 🙁</button>
+          </div>
+        </div>
+
+        <div class="mb-7">
+          <p class="field-label mb-3">Would you choose to stay with us again on your next trip? 🧳</p>
+          <div class="pill-row" data-pillgroup="again">
+            <button type="button" class="pill-btn" data-value="Yes">Yes! Can't wait 🥳</button>
+            <button type="button" class="pill-btn" data-value="Maybe">Maybe 🤷‍♂️</button>
+            <button type="button" class="pill-btn" data-value="No">No 👎</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="f-teammember"><i class="fa-solid fa-award mr-2 text-amber-500"></i>Who was your hospitality superstar? 🦸‍♂️</label>
+          <input id="f-teammember" type="text" class="field-input" placeholder="Name of a team member who made your day">
+        </div>
+
+        <div class="flex items-center justify-between mt-9 gap-3">
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+          <button type="button" class="btn btn-primary" data-next="more">Continue <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </section>
+
+      <!-- ============ STEP: COMMENTS ============ -->
+      <section class="step" data-step="comments">
+        <p class="seq-label mb-2">ANYTHING ELSE 💭</p>
+        <h2 class="font-display text-[26px] text-ink mb-7">Any other comments or suggestions?</h2>
+        <textarea id="f-comments" class="field-textarea" style="min-height:140px" placeholder="Anything else you'd like to share with our team…"></textarea>
+
+        <p class="font-display italic text-[15px] mt-8 text-center" style="color:var(--storm)">
+          "Every guest should leave feeling calm, cared for and right at home." ✨
+        </p>
+
+        <div class="flex items-center justify-between mt-9 gap-3">
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+          <button type="button" class="btn btn-champagne text-base py-3 px-7" id="submit-btn">
+            Send Feedback 🚀
+          </button>
+        </div>
+      </section>
+
+      <!-- ============ STEP: THANK YOU ============ -->
+      <section class="step" data-step="thanks">
+        <div class="text-center py-4" data-aos="zoom-in" data-aos-duration="500">
+          <div class="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center text-white text-3xl shadow-xl animate-bounce" style="background:linear-gradient(150deg,var(--champagne),var(--rain))">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <span class="playful-badge mb-3"><i class="fa-solid fa-heart"></i> You're Awesome!</span>
+          <h2 class="font-display text-[32px] text-ink mb-4">Thank you for sharing your journey! 🎉</h2>
+          <p class="text-[15px] leading-relaxed max-w-[440px] mx-auto mb-3" style="color:var(--storm)">
+            Your feedback has been saved and sent straight to our guest experience team.
+          </p>
+          <p class="text-[13px]" style="color:var(--storm); opacity:.7">We can't wait to welcome you back to Silver Rain Suites soon! 🌈</p>
+
+          <button type="button" id="restart-btn" class="btn btn-ghost mt-9">
+            <i class="fa-solid fa-rotate-left"></i> Submit another response
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+    <p class="text-center mt-7 text-[12px]" style="color:var(--mist); opacity:.35">
+      Silver Rain Suites · Guest Experience Feedback
+    </p>
+  </div>
+</div>
+
+<div id="toast"><i class="fa-solid fa-circle-check" style="color:var(--champagne)"></i><span id="toast-msg"></span></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.1/aos.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
